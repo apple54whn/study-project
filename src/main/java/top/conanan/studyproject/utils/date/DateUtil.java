@@ -7,16 +7,12 @@ import org.springframework.util.Assert;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 import static top.conanan.studyproject.utils.date.CrossDayHourBo.*;
 
 @Slf4j
 public class DateUtil {
-
 
 
     public static LocalDateTime castDate2LocalDateTime(Date date) {
@@ -28,12 +24,11 @@ public class DateUtil {
     }
 
 
-
-
     /**
      * 跨年数量，比如[2022，2033]，返回2
+     *
      * @param start start，注意传递的 LocalDateTime 具体时分秒！，否则计算不正确
-     * @param end end，注意传递的 LocalDateTime 具体时分秒！，否则计算不正确
+     * @param end   end，注意传递的 LocalDateTime 具体时分秒！，否则计算不正确
      * @return 跨年数量
      */
     public static long crossYear(LocalDateTime start, LocalDateTime end) {
@@ -50,21 +45,24 @@ public class DateUtil {
 
     /**
      * 是否跨年
+     *
      * @param start start，注意传递的 LocalDateTime 具体时分秒！，否则计算不正确
-     * @param end end，注意传递的 LocalDateTime 具体时分秒！，否则计算不正确
+     * @param end   end，注意传递的 LocalDateTime 具体时分秒！，否则计算不正确
      * @return 是否跨年
      */
     public static boolean isCrossYear(LocalDateTime start, LocalDateTime end) {
         return crossYear(start, end) != 1;
     }
+
     public static boolean isCrossYear(Date start, Date end) {
         return crossYear(start, end) != 1;
     }
 
     /**
      * 跨年拆分
+     *
      * @param start start，注意传递的 LocalDateTime 具体时分秒！，否则计算不正确
-     * @param end end，注意传递的 LocalDateTime 具体时分秒！，否则计算不正确
+     * @param end   end，注意传递的 LocalDateTime 具体时分秒！，否则计算不正确
      * @return [2022, 2023]
      */
     public static List<CrossYearBo> splitCrossYear(LocalDateTime start, LocalDateTime end) {
@@ -87,13 +85,12 @@ public class DateUtil {
     }
 
 
-
-
-
     /**
      * 跨月数量，比如[202211，202302]，返回4
+     * ChronoUnit.MONTHS.between 主要会存在不满1月时返回0的情况，不好计算
+     *
      * @param start start，注意传递的 LocalDateTime 具体时分秒！，否则计算不正确
-     * @param end end，注意传递的 LocalDateTime 具体时分秒！，否则计算不正确
+     * @param end   end，注意传递的 LocalDateTime 具体时分秒！，否则计算不正确
      * @return 跨月数量
      */
     public static long crossMonth(LocalDateTime start, LocalDateTime end) {
@@ -101,7 +98,8 @@ public class DateUtil {
         Assert.notNull(start, "start should not be null");
         Assert.notNull(end, "end should not be null");
         Assert.isTrue(!start.isAfter(end), "start is must before or equal end");
-        return ChronoUnit.MONTHS.between(start, end) + 1;
+
+        return 12L * (end.getYear() - start.getYear()) + end.getMonthValue() - start.getMonthValue() + 1;
     }
 
     public static long crossMonth(Date start, Date end) {
@@ -111,8 +109,9 @@ public class DateUtil {
 
     /**
      * 是否跨月
+     *
      * @param start start，注意传递的 LocalDateTime 具体时分秒！，否则计算不正确
-     * @param end end，注意传递的 LocalDateTime 具体时分秒！，否则计算不正确
+     * @param end   end，注意传递的 LocalDateTime 具体时分秒！，否则计算不正确
      * @return 是否跨月
      */
     public static boolean isCrossMonth(LocalDateTime start, LocalDateTime end) {
@@ -126,8 +125,9 @@ public class DateUtil {
 
     /**
      * 跨月拆分
+     *
      * @param start start，注意传递的 LocalDateTime 具体时分秒！，否则计算不正确
-     * @param end end，注意传递的 LocalDateTime 具体时分秒！，否则计算不正确
+     * @param end   end，注意传递的 LocalDateTime 具体时分秒！，否则计算不正确
      * @return [202211, 202212, 202301, 202302]
      */
     public static List<CrossMonthBo> splitCrossMonth(LocalDateTime start, LocalDateTime end) {
@@ -138,8 +138,23 @@ public class DateUtil {
 
             CrossMonthBo crossMonthBo = new CrossMonthBo();
             crossMonthBo.setYearMonth(now.getYear() + StringUtils.leftPad(String.valueOf(now.getMonthValue()), 2, "0"));
-            crossMonthBo.setFirstDayOfMonth(LocalDateTime.of(now.with(TemporalAdjusters.firstDayOfMonth()).toLocalDate(), LocalTime.MIN));
-            crossMonthBo.setLastDayOfMonth(LocalDateTime.of(now.with(TemporalAdjusters.lastDayOfMonth()).toLocalDate(), LocalTime.MAX));
+
+            if (i == 0) {
+                crossMonthBo.setFirstDayOfMonth(start);
+            }
+
+            if (i == cross - 1) {
+                crossMonthBo.setLastDayOfMonth(end);
+            }
+
+            if (Objects.isNull(crossMonthBo.getFirstDayOfMonth())) {
+                crossMonthBo.setFirstDayOfMonth(LocalDateTime.of(now.with(TemporalAdjusters.firstDayOfMonth()).toLocalDate(), LocalTime.MIN));
+            }
+
+            if (Objects.isNull(crossMonthBo.getLastDayOfMonth())) {
+                crossMonthBo.setLastDayOfMonth(LocalDateTime.of(now.with(TemporalAdjusters.lastDayOfMonth()).toLocalDate(), LocalTime.MAX));
+            }
+
             list.add(crossMonthBo);
         }
         return list;
@@ -150,13 +165,11 @@ public class DateUtil {
     }
 
 
-
-
-
     /**
      * 跨天数量，比如[20221111，20221112]，返回2
+     *
      * @param start start，注意传递的 LocalDateTime 具体时分秒！，否则计算不正确
-     * @param end end，注意传递的 LocalDateTime 具体时分秒！，否则计算不正确
+     * @param end   end，注意传递的 LocalDateTime 具体时分秒！，否则计算不正确
      * @return 跨天数量
      */
     public static long crossDay(LocalDate start, LocalDate end) {
@@ -172,8 +185,6 @@ public class DateUtil {
     public static long crossDay(Date start, Date end) {
         return crossDay(castDate2LocalDate(start), castDate2LocalDate(end));
     }
-
-
 
 
     public static CrossDayHourBo crossDayHour(LocalDateTime start, LocalDateTime end) {
@@ -205,6 +216,7 @@ public class DateUtil {
 
     /**
      * 判断时间区间 A 和 B 是否存在交叉（已经包括边界重合）
+     *
      * @param start1
      * @param end1
      * @param start2
@@ -229,6 +241,7 @@ public class DateUtil {
 
     /**
      * 计算实际天数（排除假期等）
+     *
      * @param start
      * @param end
      * @return
@@ -263,10 +276,6 @@ public class DateUtil {
     }
 
 
-
-
-
-
     public static void testOverlap(LocalDateTime startA, LocalDateTime endA,
                                    LocalDateTime startB, LocalDateTime endB) {
         boolean isOverlap = checkOverlap(startA, endA, startB, endB);
@@ -274,12 +283,10 @@ public class DateUtil {
     }
 
 
-
-
     public static void main(String[] args) {
 
-        System.out.println(crossDayHour(LocalDateTime.of(2023, 3, 7, 9, 0), LocalDateTime.of(2023, 3, 11, 18, 0)));
-        System.out.println(calcDay(LocalDateTime.of(2023, 3, 7, 9, 0), LocalDateTime.of(2023, 3, 11, 18, 0)));
+//        System.out.println(crossDayHour(LocalDateTime.of(2023, 3, 7, 9, 0), LocalDateTime.of(2023, 3, 11, 18, 0)));
+//        System.out.println(calcDay(LocalDateTime.of(2023, 3, 7, 9, 0), LocalDateTime.of(2023, 3, 11, 18, 0)));
 
 
 //        // 交叉的情况
@@ -303,8 +310,8 @@ public class DateUtil {
 //                LocalDateTime.of(2023, 8, 1, 12, 0), LocalDateTime.of(2023, 8, 1, 14, 0));
 //
 //
-//        LocalDateTime start = LocalDateTime.of(2023,8,4, 14,0,0);
-//        LocalDateTime end = LocalDateTime.of(2023,8,5, 13,0,0);
+        LocalDateTime start = LocalDateTime.of(2023, 8, 10, 0, 0, 0);
+        LocalDateTime end = LocalDateTime.of(2023, 10, 20, 0, 0, 0);
 //
 //        System.out.println(crossDay(start.toLocalDate(), end.toLocalDate()));
 //        System.out.println(crossDayHour(start, end));
@@ -313,22 +320,21 @@ public class DateUtil {
 //        System.out.println(crossYear(start, end));
 //        System.out.println(splitCrossYear(start, end));
 
-//        System.out.println(crossMonth(start, end));
+        System.out.println(crossMonth(start, end));
 //        System.out.println(isCrossMonth(start, end));
-//        System.out.println(splitCrossMonth(start, end));
+        System.out.println(splitCrossMonth(start, end));
 
 
         System.out.println("=========================");
 
-        Calendar instance1 = Calendar.getInstance();
-        Date start2 = instance1.getTime();
-
-        Calendar instance2 = Calendar.getInstance();
-        instance2.add(Calendar.HOUR, 12);
-        Date end2 = instance2.getTime();
-
-        System.out.println(crossDay(start2, end2));
-
+//        Calendar instance1 = Calendar.getInstance();
+//        Date start2 = instance1.getTime();
+//
+//        Calendar instance2 = Calendar.getInstance();
+//        instance2.add(Calendar.HOUR, 12);
+//        Date end2 = instance2.getTime();
+//
+//        System.out.println(crossDay(start2, end2));
 
 
     }
